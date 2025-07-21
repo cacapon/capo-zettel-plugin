@@ -1,4 +1,5 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { zettelMode } from './zettelMode';
 
 interface CapoZettelPluginSettings {
 	mySetting: string;
@@ -10,10 +11,33 @@ const DEFAULT_SETTINGS: CapoZettelPluginSettings = {
 
 export default class CapoZettelPlugin extends Plugin {
 	settings: CapoZettelPluginSettings;
-	private mode: string = "NORMAL";
+	private mode: zettelMode = zettelMode.NORMAL;
 	private statusBarItemEl: HTMLElement;
 
-	private setMode(mode: string){
+	private keyHandler = (event: KeyboardEvent) => {
+		if ((document.activeElement as HTMLElement)?.tagName === "TEXTAREA" ||
+			(document.activeElement as HTMLElement)?.tagName === "INPUT") {
+			return ;
+		};
+		if (event.key === "Escape") {
+			this.setMode(zettelMode.NORMAL);
+			return;
+		}
+		if (this.mode !== zettelMode.NORMAL) return;
+		switch (event.key) {
+			case "t":
+				this.setMode(zettelMode.TMP);
+				break;
+			case "s":
+				this.setMode(zettelMode.SRC);
+				break;
+			case "r":
+				this.setMode(zettelMode.REF);
+				break;
+		}
+	};
+
+	private setMode(mode: zettelMode){
 		this.mode = mode;
 		this.updateStatus();
 	}
@@ -28,7 +52,7 @@ export default class CapoZettelPlugin extends Plugin {
 		this.statusBarItemEl = this.addStatusBarItem();
 		this.updateStatus();
 
-		const modes = ["NORMAL","TMP","REF","SRC"];
+		const modes: zettelMode[] = Object.values(zettelMode);
 		for (const mode of modes) {
 			this.addCommand({
 				id: `${mode.toLowerCase()}-mode`,
