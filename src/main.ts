@@ -1,5 +1,6 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { zettelMode } from './zettelMode';
+import { createKeyHandler } from './KeyHandler';
 
 interface CapoZettelPluginSettings {
 	mySetting: string;
@@ -13,30 +14,9 @@ export default class CapoZettelPlugin extends Plugin {
 	settings: CapoZettelPluginSettings;
 	private mode: zettelMode = zettelMode.NORMAL;
 	private statusBarItemEl: HTMLElement;
+	private keyHandler: (e: KeyboardEvent) => void;
 
-	private keyHandler = (event: KeyboardEvent) => {
-		if ((document.activeElement as HTMLElement)?.tagName === "TEXTAREA" ||
-			(document.activeElement as HTMLElement)?.tagName === "INPUT") {
-			return ;
-		};
-		if (event.key === "Escape") {
-			this.setMode(zettelMode.NORMAL);
-			return;
-		}
-		if (this.mode !== zettelMode.NORMAL) return;
-		switch (event.key) {
-			case "t":
-				this.setMode(zettelMode.TMP);
-				break;
-			case "s":
-				this.setMode(zettelMode.SRC);
-				break;
-			case "r":
-				this.setMode(zettelMode.REF);
-				break;
-		}
-	};
-
+	private getMode(): zettelMode { return this.mode; }
 	private setMode(mode: zettelMode){
 		this.mode = mode;
 		this.updateStatus();
@@ -52,6 +32,8 @@ export default class CapoZettelPlugin extends Plugin {
 		this.statusBarItemEl = this.addStatusBarItem();
 		this.updateStatus();
 
+		this.keyHandler = createKeyHandler(() => this.getMode(), (m) => this.setMode(m));
+		window.addEventListener("keydown", this.keyHandler);
 		const modes: zettelMode[] = Object.values(zettelMode);
 		for (const mode of modes) {
 			this.addCommand({
@@ -61,7 +43,6 @@ export default class CapoZettelPlugin extends Plugin {
 			});
 		}
 
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
